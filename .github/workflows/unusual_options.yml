@@ -1,0 +1,28 @@
+name: Unusual options alert
+
+on:
+  schedule:
+    # Every 30 min, 14:00-20:30 UTC (~US market hours), Mon-Fri
+    - cron: "*/30 14-20 * * 1-5"
+  workflow_dispatch: {}
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Restore seen-alerts state
+        uses: actions/cache@v4
+        with:
+          path: uoa_seen.json
+          key: uoa-seen-${{ github.run_id }}
+          restore-keys: uoa-seen-
+      - run: pip install yfinance pandas requests
+      - name: Scan
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          TICKERS: ${{ vars.TICKERS || 'NVDA,AAPL,TSLA,AMD,MSFT,META,AMZN,GOOGL,SPY,QQQ' }}
+        run: python unusual_options_alert.py
